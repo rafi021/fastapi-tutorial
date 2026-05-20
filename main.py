@@ -17,3 +17,11 @@ def get_products(search: str = None, limit: int = 10, sort: str = None):
     if sort:
         filtered_products.sort(key=lambda x: x.lower() if sort == "asc" else -x.lower())
     return {"products": filtered_products[:limit]}
+
+
+# Create new Product
+@app.post("/products")
+def create_product(name: str):
+    new_product = f"Product {len(products) + 1}: {name}"
+    products.append(new_product)
+    return {"message": "Product created", "product": new_product}
