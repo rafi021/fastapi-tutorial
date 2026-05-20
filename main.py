@@ -3,41 +3,27 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# Let's create a Todo CRUD API
-todos = []
-
-class Todo(BaseModel):
+class User(BaseModel):
     id: int
-    title: str
-    completed: bool
+    name: str
+    email: str
+    password: str
 
-@app.post("/todos")
-def create_todo(todo: Todo):
-    todos.append(todo)
-    return {"message": "Todo created", "todo": todo}
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
 
-@app.get("/todos")
-def get_todos():
-    return {"message": "Fetch All Todos", "todos": todos}
+users = []
 
-@app.get("/todos/{todo_id}")
-def get_todo(todo_id: int):
-    todo = next((t for t in todos if t.id == todo_id), None)
-    if todo:
-        return {"message": "Fetch Todo", "todo": todo}
-    return {"message": "Todo not found"}, 404
+@app.post("/users/", response_model=UserResponse)
+def create_user(user: User):
+    users.append(user)
+    return UserResponse(id=user.id, name=user.name, email=user.email)
 
-@app.put("/todos/{todo_id}")
-def update_todo(todo_id: int, updated_todo: Todo):
-    # Find the index of the todo we want to update
-    for index, todo in enumerate(todos):
-        if todo.id == todo_id:
-            todos[index] = updated_todo
-            return {"message": "Todo updated", "todo": updated_todo}
-
-@app.delete("/todos/{todo_id}")
-def delete_todo(todo_id: int):
-    for index, todo in enumerate(todos):
-        if todo.id == todo_id:
-            deleted_todo = todos.pop(index)
-            return {"message": "Todo deleted", "todo": deleted_todo}
+@app.get("/users/{user_id}", response_model=UserResponse)
+def read_user(user_id: int):
+    for user in users:
+        if user.id == user_id:
+            return UserResponse(id=user.id, name=user.name, email=user.email)
+    return {"error": "User not found"}
