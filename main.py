@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -40,8 +40,4 @@ def read_user(user_id: int):
                 message="User retrieved successfully",
                 data=UserResponse(id=user.id, name=user.name, email=user.email)
             )
-    return ResponseModel(
-        status="error",
-        message="User not found",
-        data=None
-    )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
