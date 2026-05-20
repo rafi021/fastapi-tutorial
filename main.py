@@ -13,19 +13,12 @@ class CreateProductRequest (BaseModel):
     name: str
     price: float
     stock: int
+    category: CategoryRequest
 
-
-
-# Query Parameters ---> optional params (search, sort) --> limit (default value)
-# Multiple query params
-@app.get("/products")
-def get_products(search: str = None, limit: int = 10, sort: str = None):
-    filtered_products = products
-    if search:
-        filtered_products = [p for p in filtered_products if search.lower() in p.lower()]
-    if sort:
-        filtered_products.sort(key=lambda x: x.lower() if sort == "asc" else -x.lower())
-    return {"products": filtered_products[:limit]}
+# CategoryRequest name required but description is optional
+class CategoryRequest (BaseModel):
+    name: str
+    description: str | None = None
 
 
 # Create new Product with pydantic validation
