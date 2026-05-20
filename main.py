@@ -3,17 +3,17 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
+# Products with 20 items
+products = [f"Product {i}" for i in range(1, 21)]
+
+
+# Query Parameters ---> optional params (search, sort) --> limit (default value)
+# Multiple query params
 @app.get("/products")
-def get_products():
-    return {"products": ["Product 1", "Product 2", "Product 3"]}
-
-
-# Dynamic route to get a specific product by ID (path parameter)
-@app.get("/products/{product_id}")
-def get_product(product_id: int):
-    return {"product_id": product_id, "name": f"Product {product_id}"}
-
-
-@app.get("/products-by-slug/{product_slug}")
-def get_product_by_slug(product_slug: str):
-    return {"product_slug": product_slug, "name": f"Product {product_slug}"}
+def get_products(search: str = None, limit: int = 10, sort: str = None):
+    filtered_products = products
+    if search:
+        filtered_products = [p for p in filtered_products if search.lower() in p.lower()]
+    if sort:
+        filtered_products.sort(key=lambda x: x.lower() if sort == "asc" else -x.lower())
+    return {"products": filtered_products[:limit]}
