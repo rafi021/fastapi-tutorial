@@ -12,3 +12,8 @@ def get_products():
 @app.get("/products/{product_id}")
 def get_product(product_id: int):
     return {"product_id": product_id, "name": f"Product {product_id}"}
+
+
+@app.get("/products-by-slug/{product_slug}")
+def get_product_by_slug(product_slug: str):
+    return {"product_slug": product_slug, "name": f"Product {product_slug}"}
