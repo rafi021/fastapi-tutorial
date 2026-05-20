@@ -3,31 +3,41 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# Products with name, price, stock --> add 20 items
-products = [
-    {"name": f"Product {i}", "price": i * 10.0, "stock": i * 5}
-    for i in range(1, 21)
-]
+# Let's create a Todo CRUD API
+todos = []
 
-class CreateProductRequest (BaseModel):
-    name: str
-    price: float
-    stock: int
-    category: CategoryRequest
+class Todo(BaseModel):
+    id: int
+    title: str
+    completed: bool
 
-# CategoryRequest name required but description is optional
-class CategoryRequest (BaseModel):
-    name: str
-    description: str | None = None
+@app.post("/todos")
+def create_todo(todo: Todo):
+    todos.append(todo)
+    return {"message": "Todo created", "todo": todo}
 
+@app.get("/todos")
+def get_todos():
+    return {"message": "Fetch All Todos", "todos": todos}
 
-# Create new Product with pydantic validation
-@app.post("/products")
-def create_product(product: CreateProductRequest):
-    new_product = {
-        "name": product.name,
-        "price": product.price,
-        "stock": product.stock
-    }
-    products.append(new_product)
-    return {"message": "Product created", "product": new_product}
+@app.get("/todos/{todo_id}")
+def get_todo(todo_id: int):
+    todo = next((t for t in todos if t.id == todo_id), None)
+    if todo:
+        return {"message": "Fetch Todo", "todo": todo}
+    return {"message": "Todo not found"}, 404
+
+@app.put("/todos/{todo_id}")
+def update_todo(todo_id: int, updated_todo: Todo):
+    # Find the index of the todo we want to update
+    for index, todo in enumerate(todos):
+        if todo.id == todo_id:
+            todos[index] = updated_todo
+            return {"message": "Todo updated", "todo": updated_todo}
+
+@app.delete("/todos/{todo_id}")
+def delete_todo(todo_id: int):
+    for index, todo in enumerate(todos):
+        if todo.id == todo_id:
+            deleted_todo = todos.pop(index)
+            return {"message": "Todo deleted", "todo": deleted_todo}
