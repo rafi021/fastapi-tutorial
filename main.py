@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from pydantic import BaseModel
 from datetime import datetime
+import asyncio
 
 # MYSQL Database setup
 DATABASE_URL = "mysql+pymysql://root:lerd@127.0.0.1/fastapi_db"
@@ -46,6 +47,11 @@ class TodoResponse(BaseModel):
     id: int
     title: str
     completed: bool
+
+@app.get("/")
+async def home():
+    await asyncio.sleep(3)  # Simulate a delay
+    return {"message": "Welcome to the Todo API"}
 
 @app.post("/todos/", response_model=TodoResponse)
 async def create_todo(request: TodoCreateRequest, db: Session = Depends(get_db)):
