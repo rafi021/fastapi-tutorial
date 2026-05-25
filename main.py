@@ -9,6 +9,8 @@
 
 # print(soup.title.text)
 
+from time import time
+
 from fastapi import FastAPI
 import requests
 from bs4 import BeautifulSoup
@@ -16,22 +18,31 @@ from bs4 import BeautifulSoup
 
 app = FastAPI()
 
+# Cache Storage
+cache_data = []
+last_fetch = 0
+
 @app.get("/scrape")
 def scrape(page: int = 1, limit: int = 10):
-    url = "https://www.dailyamardesh.com"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    global cache_data, last_fetch
+    # Check if cache is valid (e.g., 10 minutes)
 
-    title = []
-    for item in soup.find_all('span', class_='inline'):
-        title.append(item.text.strip())
+    start = time()
+    if time() - last_fetch > 60:
+        print("Fetching new data...")
+        url = "https://www.dailyamardesh.com"
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        cache_data = []
+        for item in soup.find_all('span', class_='inline'):
+            cache_data.append(item.text.strip())
+        last_fetch = time()
+    else:
+        print("Using cached data...")
 
-    # Pagination logic
-    start = (page - 1) * limit
-    end = start + limit
+    end = time()
+    print(f"Time taken: {end - start} seconds")
     return {
-        "page": page,
-        "limit": limit,
-        "total": len(title),
-        "news": title[start:end]
-    } 
+        "total": len(cache_data),
+        "news": cache_data
+    }
