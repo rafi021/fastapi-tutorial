@@ -7,12 +7,14 @@ from app.core.config import settings
 
 request_id_ctx_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
 user_id_ctx_var: contextvars.ContextVar[str] = contextvars.ContextVar("user_id", default="anonymous")
+trace_id_ctx_var: contextvars.ContextVar[str] = contextvars.ContextVar("trace_id", default="-")
 
 
 class RequestContextFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.request_id = request_id_ctx_var.get()
         record.user_id = user_id_ctx_var.get()
+        record.trace_id = trace_id_ctx_var.get()
         return True
 
 
@@ -24,6 +26,7 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
             "request_id": getattr(record, "request_id", "-"),
+            "trace_id": getattr(record, "trace_id", "-"),
             "user_id": getattr(record, "user_id", "anonymous"),
         }
         if record.exc_info:

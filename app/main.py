@@ -14,17 +14,20 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.rate_limit import limiter, rate_limit_handler
 from app.core.startup_checks import run_startup_checks
+from app.core.tracing import configure_tracing
 from app.db.base import Base
 from app.db.init_db import init_db
 from app.db.session import SessionLocal, engine
 from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.request_context import RequestContextMiddleware
 from app.middleware.metrics import MetricsMiddleware
+from app.middleware.tracing import TracingMiddleware
 from app.routes.auth_routes import router as auth_router
 from app.routes.category_routes import router as category_router
 from app.workers.celery_app import celery_app
 
 configure_logging()
+configure_tracing()
 logger = logging.getLogger(__name__)
 
 
@@ -81,6 +84,7 @@ def create_app() -> FastAPI:
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+    app.add_middleware(TracingMiddleware, service_name=settings.OTEL_SERVICE_NAME)
     app.add_middleware(MetricsMiddleware)
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(IdempotencyMiddleware)

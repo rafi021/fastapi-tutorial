@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     LOGIN_MAX_ATTEMPTS: int = 5
     LOGIN_LOCK_MINUTES: int = 15
 
+    OTEL_ENABLED: bool = True
+    OTEL_SERVICE_NAME: str = "araf-ecommerce-api"
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    OTEL_EXPORTER_OTLP_INSECURE: bool = True
+
     RATE_LIMIT_PER_MINUTE: int = 60
     CORS_ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 

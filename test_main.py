@@ -48,6 +48,7 @@ def test_request_id_header_is_set() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert "X-Request-ID" in response.headers
+    assert "X-Trace-ID" in response.headers
 
 
 def test_health_dependencies() -> None:

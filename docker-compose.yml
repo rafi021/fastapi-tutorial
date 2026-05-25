@@ -28,6 +28,26 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.59
+    container_name: araf_jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.106.1
+    container_name: araf_otel_collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "14317:4317"
+      - "14318:4318"
+    depends_on:
+      - jaeger
+
   api:
     build: .
     container_name: araf_api
@@ -37,6 +57,8 @@ services:
       redis:
         condition: service_started
       rabbitmq:
+        condition: service_started
+      otel-collector:
         condition: service_started
     environment:
       DATABASE_URL: mysql+pymysql://root:root@mysql:3306/araf_ecommerce
@@ -51,6 +73,9 @@ services:
       MAX_REQUEST_SIZE_BYTES: 1048576
       LOGIN_MAX_ATTEMPTS: 5
       LOGIN_LOCK_MINUTES: 15
+      OTEL_ENABLED: true
+      OTEL_SERVICE_NAME: araf-ecommerce-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       API_PREFIX: /api/v1
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       DEFAULT_ADMIN_USERNAME: admin

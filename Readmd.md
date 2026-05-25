@@ -26,6 +26,10 @@ REQUEST_TIMEOUT_SECONDS=30
 MAX_REQUEST_SIZE_BYTES=1048576
 LOGIN_MAX_ATTEMPTS=5
 LOGIN_LOCK_MINUTES=15
+OTEL_ENABLED=true
+OTEL_SERVICE_NAME=araf-ecommerce-api
+OTEL_EXPORTER_OTLP_ENDPOINT=
+OTEL_EXPORTER_OTLP_INSECURE=true
 
 RATE_LIMIT_PER_MINUTE=60
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
@@ -46,6 +50,8 @@ Services included:
 - MySQL
 - Redis
 - RabbitMQ (management UI on `http://127.0.0.1:15672`)
+- OpenTelemetry Collector
+- Jaeger UI (`http://127.0.0.1:16686`)
 
 ## 4) Run API server
 ```bash
@@ -104,6 +110,21 @@ pytest -q
 
 ## 10) Metrics endpoint
 - `GET /metrics` exposes Prometheus metrics.
+
+## 10.1) Tracing
+- OpenTelemetry tracing is enabled with OTLP exporter support.
+- Set `OTEL_EXPORTER_OTLP_ENDPOINT` to your collector URL to export traces.
+- Response headers include:
+	- `X-Request-ID`
+	- `X-Trace-ID`
+- Logs include both `request_id` and `trace_id` for correlation.
+
+### Local tracing with Docker Compose
+- `docker compose up -d` starts API + MySQL + Redis + RabbitMQ + OTel Collector + Jaeger.
+- API traces are preconfigured to export to collector via:
+  - `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces`
+- Open Jaeger UI:
+  - `http://127.0.0.1:16686`
 
 ## 11) Production controls implemented
 - Structured JSON logging with request and user context.

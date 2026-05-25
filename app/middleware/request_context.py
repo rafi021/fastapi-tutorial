@@ -6,14 +6,16 @@ from fastapi.responses import JSONResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
-from app.core.logging import request_id_ctx_var, user_id_ctx_var
+from app.core.logging import request_id_ctx_var, trace_id_ctx_var, user_id_ctx_var
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        trace_id = request.headers.get("X-Trace-ID", "-")
         request_id_token = request_id_ctx_var.set(request_id)
         user_id_token = user_id_ctx_var.set("anonymous")
+        trace_id_token = trace_id_ctx_var.set(trace_id)
         request.state.request_id = request_id
 
         try:
@@ -28,6 +30,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                             "message": "Request payload exceeds the allowed size",
                         },
                         "request_id": request_id,
+                        "trace_id": trace_id_ctx_var.get(),
                     },
                 )
 
@@ -35,6 +38,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 call_next(request), timeout=settings.REQUEST_TIMEOUT_SECONDS
             )
             response.headers["X-Request-ID"] = request_id
+            response.headers["X-Trace-ID"] = trace_id_ctx_var.get()
             return response
         except TimeoutError:
             return JSONResponse(
@@ -46,8 +50,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                         "message": "Request processing timed out",
                     },
                     "request_id": request_id,
+                    "trace_id": trace_id_ctx_var.get(),
                 },
             )
         finally:
             request_id_ctx_var.reset(request_id_token)
             user_id_ctx_var.reset(user_id_token)
+            trace_id_ctx_var.reset(trace_id_token)
