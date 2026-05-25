@@ -1,12 +1,8 @@
-from fastapi import FastAPI
+import requests
 
-app = FastAPI()
+response = requests.get('https://fakestoreapi.com/products')
 
-@app.get("/")
-def home():
-    return {"message": "Hello, World!"}
-
-
-@app.get('/add')
-def add(a: int, b: int):
-    return {"result": a + b}
+if response.status_code == 200:
+    print(response.json())
+else:
+    print("Failed to retrieve data")
