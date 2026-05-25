@@ -33,6 +33,9 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379/0"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672//"
+    MEDIA_ROOT: str = "media"
+    MEDIA_UPLOAD_DIR: str = "uploads/categories"
+    MEDIA_PROCESSED_DIR: str = "processed/categories"
 
     DEFAULT_ADMIN_USERNAME: str = "admin"
     DEFAULT_ADMIN_PASSWORD: str = "admin123"

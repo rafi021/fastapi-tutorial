@@ -86,5 +86,46 @@ services:
     volumes:
       - ./:/code
 
+  celery-worker:
+    build: .
+    container_name: araf_celery_worker
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://root:root@mysql:3306/araf_ecommerce
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672//
+      SECRET_KEY: change-this-secret-key
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      OTEL_ENABLED: false
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=info --pool=solo
+    volumes:
+      - ./:/code
+
+  flower:
+    build: .
+    container_name: araf_flower
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+      celery-worker:
+        condition: service_started
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672//
+    command: celery -A app.workers.celery_app.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./:/code
+
 volumes:
   mysql_data:

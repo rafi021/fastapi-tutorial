@@ -2,6 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.category import Category
+from app.models.category_image_job import CategoryImageJob
 from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
@@ -56,3 +57,74 @@ class CategoryService:
     def delete_category(db: Session, category: Category) -> None:
         db.delete(category)
         db.commit()
+
+    @staticmethod
+    def create_image_job(db: Session, category_id: int, original_image_path: str) -> CategoryImageJob:
+        job = CategoryImageJob(
+            category_id=category_id,
+            status="queued",
+            original_image_path=original_image_path,
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        return job
+
+    @staticmethod
+    def set_image_job_celery_id(db: Session, job: CategoryImageJob, task_id: str) -> CategoryImageJob:
+        job.celery_task_id = task_id
+        db.commit()
+        db.refresh(job)
+        return job
+
+    @staticmethod
+    def get_image_job_by_id(db: Session, job_id: int) -> CategoryImageJob | None:
+        return db.query(CategoryImageJob).filter(CategoryImageJob.id == job_id).first()
+
+    @staticmethod
+    def get_image_jobs(
+        db: Session,
+        status: str | None = None,
+        category_id: int | None = None,
+    ) -> list[CategoryImageJob]:
+        query = db.query(CategoryImageJob)
+        if status:
+            query = query.filter(CategoryImageJob.status == status)
+        if category_id:
+            query = query.filter(CategoryImageJob.category_id == category_id)
+        return query.order_by(CategoryImageJob.id.desc()).all()
+
+    @staticmethod
+    def mark_image_job_processing(db: Session, job: CategoryImageJob) -> CategoryImageJob:
+        job.status = "processing"
+        job.error_message = None
+        db.commit()
+        db.refresh(job)
+        return job
+
+    @staticmethod
+    def mark_image_job_completed(
+        db: Session,
+        job: CategoryImageJob,
+        processed_image_path: str,
+    ) -> CategoryImageJob:
+        job.status = "completed"
+        job.processed_image_path = processed_image_path
+        job.error_message = None
+
+        category = db.query(Category).filter(Category.id == job.category_id).first()
+        if category:
+            category.image_original_path = job.original_image_path
+            category.image_processed_path = processed_image_path
+
+        db.commit()
+        db.refresh(job)
+        return job
+
+    @staticmethod
+    def mark_image_job_failed(db: Session, job: CategoryImageJob, error_message: str) -> CategoryImageJob:
+        job.status = "failed"
+        job.error_message = error_message[:2000]
+        db.commit()
+        db.refresh(job)
+        return job

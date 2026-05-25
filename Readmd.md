@@ -52,6 +52,8 @@ Services included:
 - RabbitMQ (management UI on `http://127.0.0.1:15672`)
 - OpenTelemetry Collector
 - Jaeger UI (`http://127.0.0.1:16686`)
+- Celery worker
+- Flower dashboard (`http://127.0.0.1:5555`)
 
 ## 4) Run API server
 ```bash
@@ -78,11 +80,57 @@ Open Swagger: `http://127.0.0.1:8000/docs`
 
 All category routes are guarded with OAuth2 JWT auth.
 
+## 6.1) Category image upload (background processing)
+Upload endpoint:
+- `POST /api/v1/categories/{category_id}/image`
+- Content-Type: `multipart/form-data`
+- Field name: `image`
+
+Behavior:
+1. API stores original image under `media/uploads/categories`.
+2. API creates image job record (`queued`).
+3. Celery task is enqueued via RabbitMQ.
+4. Celery worker processes image in background and saves a processed file copy under `media/processed/categories`.
+5. Job status updates to `completed` or `failed`.
+
+Supported file formats:
+- `.jpg`, `.jpeg`, `.png`, `.webp`
+
+Processed files are accessible via:
+- `/media/...`
+
+## 6.2) Image job monitoring and retry
+Admin endpoints (admin token required):
+- `GET /api/v1/admin/image-jobs`
+- `GET /api/v1/admin/image-jobs?status=failed`
+- `POST /api/v1/admin/image-jobs/{job_id}/retry`
+- `GET /api/v1/admin/image-jobs-dashboard`
+
+Dashboard UI options:
+- Flower task dashboard: `http://127.0.0.1:5555`
+- In-app admin dashboard with failed-job retry buttons: `GET /api/v1/admin/image-jobs-dashboard`
+	- Paste admin bearer token in the page
+	- Load failed jobs
+	- Click Retry for any failed job
+
 ## 7) Migrations with Alembic
 Create/upgrade schema with Alembic:
 
 ```bash
 alembic upgrade head
+```
+
+If your DB was created before Alembic tracking (for example via `Base.metadata.create_all()`), the first upgrade can fail with `table already exists`. Reconcile by stamping the baseline, then upgrading:
+
+```bash
+alembic stamp 20260526_0001
+alembic upgrade head
+```
+
+If the objects from `20260526_0002` already exist too, stamp directly to head:
+
+```bash
+alembic stamp head
 ```
 
 Create a new migration:

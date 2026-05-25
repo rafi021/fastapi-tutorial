@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -23,7 +25,7 @@ from app.middleware.request_context import RequestContextMiddleware
 from app.middleware.metrics import MetricsMiddleware
 from app.middleware.tracing import TracingMiddleware
 from app.routes.auth_routes import router as auth_router
-from app.routes.category_routes import router as category_router
+from app.routes.category_routes import admin_router, router as category_router
 from app.workers.celery_app import celery_app
 
 configure_logging()
@@ -80,6 +82,10 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION, lifespan=lifespan)
 
+    media_root = Path(settings.MEDIA_ROOT)
+    media_root.mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=str(media_root)), name="media")
+
     register_exception_handlers(app)
 
     app.state.limiter = limiter
@@ -100,6 +106,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router, prefix=settings.API_PREFIX)
     app.include_router(category_router, prefix=settings.API_PREFIX)
+    app.include_router(admin_router, prefix=settings.API_PREFIX)
 
     @app.get("/health", tags=["Health"])
     def health() -> dict[str, str]:

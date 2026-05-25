@@ -20,6 +20,8 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(CategoryBase):
     id: int
+    image_original_path: Optional[str] = None
+    image_processed_path: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -31,3 +33,22 @@ class CategoryListResponse(BaseModel):
     total: int
     page: int
     size: int
+
+
+class CategoryImageJobResponse(BaseModel):
+    id: int
+    category_id: int
+    celery_task_id: Optional[str] = None
+    status: str
+    original_image_path: str
+    processed_image_path: Optional[str] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CategoryImageUploadResponse(BaseModel):
+    message: str
+    job: CategoryImageJobResponse
