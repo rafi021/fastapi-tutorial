@@ -44,6 +44,29 @@ def test_health() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_request_id_header_is_set() -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert "X-Request-ID" in response.headers
+
+
+def test_health_dependencies() -> None:
+    response = client.get("/health/dependencies")
+    assert response.status_code in (200, 503)
+    body = response.json()
+    assert "dependencies" in body
+    assert "redis" in body["dependencies"]
+    assert "rabbitmq" in body["dependencies"]
+    assert isinstance(body["dependencies"]["redis"]["ready"], bool)
+    assert isinstance(body["dependencies"]["rabbitmq"]["ready"], bool)
+
+
+def test_metrics_endpoint() -> None:
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text
+
+
 def test_category_crud_flow() -> None:
     headers = get_auth_header()
 

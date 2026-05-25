@@ -20,6 +20,12 @@ SECRET_KEY=change-this-secret-key
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 REFRESH_TOKEN_EXPIRE_DAYS=7
 ALGORITHM=HS256
+APP_ENV=development
+LOG_LEVEL=INFO
+REQUEST_TIMEOUT_SECONDS=30
+MAX_REQUEST_SIZE_BYTES=1048576
+LOGIN_MAX_ATTEMPTS=5
+LOGIN_LOCK_MINUTES=15
 
 RATE_LIMIT_PER_MINUTE=60
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
@@ -89,3 +95,30 @@ Legacy SQL file is still available at:
 ```bash
 pytest -q
 ```
+
+## 9) Health endpoints
+- `GET /health` returns basic API status.
+- `GET /health/dependencies` performs live Redis and RabbitMQ checks.
+	- Returns `200` when both are ready.
+	- Returns `503` when one or more dependencies are unavailable.
+
+## 10) Metrics endpoint
+- `GET /metrics` exposes Prometheus metrics.
+
+## 11) Production controls implemented
+- Structured JSON logging with request and user context.
+- Request ID propagation via `X-Request-ID`.
+- Standardized global error response shape.
+- Request timeout and payload size guardrails.
+- Idempotency key support for write endpoints (`Idempotency-Key`).
+- Login brute-force lockout by username and client IP.
+- Refresh token rotation with revoke tracking (Redis-backed with safe fallback).
+- Endpoint-specific rate limits for auth APIs.
+
+## 12) CI and security automation
+- CI workflow: `.github/workflows/ci.yml`
+- Security workflow: `.github/workflows/security.yml`
+
+## 13) Operational docs
+- Production standards: `docs/production-standards.md`
+- Incident runbook: `docs/runbooks/incidents.md`
