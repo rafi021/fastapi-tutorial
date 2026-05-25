@@ -1,48 +1,26 @@
-# import requests
-# from bs4 import BeautifulSoup
-
-# url = "https://www.example.com"
-
-# response = requests.get(url)
-
-# soup = BeautifulSoup(response.text, 'html.parser')
-
-# print(soup.title.text)
-
-from time import time
-
-from fastapi import FastAPI
-import requests
-from bs4 import BeautifulSoup
-
+from fastapi import FastAPI, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-# Cache Storage
-cache_data = []
-last_fetch = 0
+# limiter configuration
+limiter = Limiter(key_func=get_remote_address)
 
-@app.get("/scrape")
-def scrape(page: int = 1, limit: int = 10):
-    global cache_data, last_fetch
-    # Check if cache is valid (e.g., 10 minutes)
+app.state.limiter = limiter
 
-    start = time()
-    if time() - last_fetch > 60:
-        print("Fetching new data...")
-        url = "https://www.dailyamardesh.com"
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        cache_data = []
-        for item in soup.find_all('span', class_='inline'):
-            cache_data.append(item.text.strip())
-        last_fetch = time()
-    else:
-        print("Using cached data...")
+# Error handler for rate limit exceeded
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"message": "Too many requests, please try again later."}
+    )
 
-    end = time()
-    print(f"Time taken: {end - start} seconds")
-    return {
-        "total": len(cache_data),
-        "news": cache_data
-    }
+# Rate limited endpoint
+@app.get("/limited")
+@limiter.limit("5/minute")  # Limit to 5 requests per minute
+async def limited_endpoint(request: Request):
+    return {"message": "This is a rate-limited endpoint."}
