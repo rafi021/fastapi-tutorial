@@ -1,23 +1,28 @@
 # import requests
+# from bs4 import BeautifulSoup
 
-# response = requests.get('https://fakestoreapi.com/products')
+# url = "https://www.example.com"
 
-# if response.status_code == 200:
-#     print(response.json())
-# else:
-#     print("Failed to retrieve data")
+# response = requests.get(url)
+
+# soup = BeautifulSoup(response.text, 'html.parser')
+
+# print(soup.title.text)
 
 from fastapi import FastAPI
 import requests
+from bs4 import BeautifulSoup
+
 
 app = FastAPI()
 
-# GET ALL Data
-@app.get("/products")
-def get_products():
-    url = 'https://fakestoreapi.com/products'
+@app.get("/scrape")
+def scrape():
+    url = "https://www.dailyamardesh.com"
     response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": "Failed to retrieve data"}
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    title = []
+    for item in soup.find_all('span', class_='inline'):
+        title.append(item.text.strip())
+    return {"news": title[:10]}
